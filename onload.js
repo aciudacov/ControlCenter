@@ -218,5 +218,6 @@ function getAuthToken(){
     axios.post(baseAddress + "/validate", Telegram.WebApp.initData)
     .then(function (response){
         token = response;
+        alert("Got a bearer token");
     });
 }
