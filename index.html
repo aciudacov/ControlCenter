@@ -271,6 +271,7 @@
                             <button type="button" class="btn btn-primary" onclick="getCurrentSearches()">Refresh</button>
                         </div>
                         <ul class="list-group" id="configured-searches">
+                            <li class="list-group-item">You don't have any searches</li>
                         </ul>
                     </div>
                 </div>
@@ -318,27 +319,48 @@
             </div>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree" disabled>
-                        Broker block list (in development)
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                        Broker block list
                     </button>
                 </h2>
                 <div id="flush-collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                     <div class="accordion-body">
-                        <h3>Broker block list</h3>
+                        <div class="d-flex justify-content-evenly mb-2">
+                            <h3>Broker block list-group</h3>
+                            <button type="button" class="btn btn-primary" onclick="getBrokerBlocks()">Refresh</button>
+                        </div>
+                        <div class="card p-3 mb-2">
+                            <p>Add broker exclusions by typing the name in the input below.</p>
+                            <p>Bot will exclude all loads where broker name contains any value listed below ignoring case sensitivity.</p>
+                        </div>
                         <ul class="list-group" id="block-list">
-                            <li class="list-group-item d-flex justify-content-between"><span>Dash For It LLC</span></pan><button type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>Montway LLC</span><button type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>TurnTime Transport</span><button type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>Guardian Auto Transport LLC</span><button type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>VERILY SOLUTIONS</span><button type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button></li>
+                            <li class="list-group-item">You don't have any blocked brokers</li>
                         </ul>
                         <div class="input-group mt-2">
                             <div class="form-floating">
                                 <input type="text" class="form-control" id="brokerInput" placeholder="Exclude broker">
                                 <label for="locationInput">Exclude broker</label>
                             </div>
-                            <button class="btn btn-outline-primary" type="button" id="addBrokerBlockButton" onclick="">Add</button>
+                            <button class="btn btn-outline-primary" type="button" id="addBrokerBlockButton" onclick="createBrokerBlock()">Add</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item d-none" id="admin-panel">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFour" aria-expanded="false" aria-controls="flush-collapseFour">
+                        Admin controls
+                    </button>
+                </h2>
+                <div id="flush-collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+                    <div class="accordion-body">
+                        <div class="d-flex justify-content-evenly mb-2">
+                            <h3>Current bot user list</h3>
+                            <button type="button" class="btn btn-primary" onclick="getBotUsers()">Refresh</button>
+                        </div>
+                        <ul class="list-group" id="block-list">
+                            <li class="list-group-item">User list goes here</li>
+                        </ul>
                     </div>
                 </div>
             </div>

@@ -81,6 +81,7 @@ function checkInitData() {
 
 function loadUserData() {
     getCurrentSearches();
+    getBrokerBlocks();
 }
 
 //tooltip init
@@ -495,7 +496,29 @@ function renderCurrentSearches(searches){
         `
     });
     let searchListContainer = document.getElementById('configured-searches');
-    searchListContainer.innerHTML = renderString;
+    if (renderString != ""){
+        searchListContainer.innerHTML = renderString;
+    } else {
+        searchListContainer.innerHTML = "<li class=\"list-group-item\">You don't have any searches</li>";
+    }
+}
+
+function renderBrokerBlocks(blocks){
+    let renderString = "";
+    blocks.forEach(b => {
+        renderString += `<li id="block${b.blockId}" class="list-group-item d-flex justify-content-between">
+                            <span>${b.value}</span>
+                            <button type="button" class="btn btn-danger" ${b.isPersistent ? "disabled" : ""} onclick="deleteBrokerBlock(${b.blockId})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </li>`;
+    });
+    let blocksContainer = document.getElementById('block-list');
+    if (renderString != ""){
+        blocksContainer.innerHTML = renderString;
+    } else {
+        blocksContainer.innerHTML = "<li class=\"list-group-item\">You don't have any blocked brokers</li>";
+    }
 }
 
 function getSearchData(searchId){
@@ -586,6 +609,10 @@ function createNewSearch(){
     .then(function (response){
         Telegram.WebApp.HapticFeedback.notificationOccurred('success');
         getCurrentSearches();
+        let accordeonItem2 = document.getElementById('flush-collapseTwo');
+        let bsCollapse = new bootstrap.Collapse(accordeonItem2, {
+            toggle: true
+        });
     });
 }
 
@@ -603,16 +630,22 @@ function getCurrentSearches(){
 
 function updateSavedSearch(searchId){
     var payload = getSearchData(searchId);
+    if (payload.minVehicles > payload.maxVehicles){
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        alert("Min vehicles amount cannot be greater than max vehicles amount!");
+    }
+    else {
         axios.put(baseAddress + "/search/" + searchId, payload, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'ngrok-skip-browser-warning': '69420'
-         }
-    })
-    .then(function (response){
-        Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        getCurrentSearches();
-    });
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'ngrok-skip-browser-warning': '69420'
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            getCurrentSearches();
+        });
+    }
 }
 
 function deleteSavedSearch(searchId){
@@ -622,6 +655,79 @@ function deleteSavedSearch(searchId){
          }
     })
     .then(function (response){
-        document.getElementById('search'+searchId).remove();
+        Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        getCurrentSearches();
     });
+}
+
+function getBrokerBlocks(){
+    axios.get(baseAddress + "/blocked-brokers", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            renderBrokerBlocks(response.data);
+        });
+}
+
+function createBrokerBlock(){
+    var brokerNameInput = document.getElementById('brokerInput');
+    if (brokerNameInput.value != ''){
+        axios.post(baseAddress + "/blocked-broker/", brokerNameInput.value, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            brokerNameInput.value = "";
+            getBrokerBlocks();
+        });    
+    } else{
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        alert("Broker name cannot be empty!");
+    }
+}
+
+function deleteBrokerBlock(blockId){
+    axios.delete(baseAddress + "/blocked-broker/" + blockId, {
+        headers: {
+            Authorization: `Bearer ${token}`
+         }
+    })
+    .then(function (response){
+        Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        getBrokerBlocks();
+    });
+}
+
+function getPersistentBrokerBlocks(){
+    axios.get(baseAddress + "/blocked-brokers-persistent", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            //renderBrokerBlocks(response.data);
+        });
+}
+
+function createPersistentBrokerBlock(){
+
+}
+
+function getBotUsers(){
+    axios.get(baseAddress + "/users", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            //render user list
+        });
 }
