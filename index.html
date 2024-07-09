@@ -326,7 +326,7 @@
                 <div id="flush-collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                     <div class="accordion-body">
                         <div class="d-flex justify-content-evenly mb-2">
-                            <h3>Broker block list-group</h3>
+                            <h3>Broker blocks</h3>
                             <button type="button" class="btn btn-primary" onclick="getBrokerBlocks()">Refresh</button>
                         </div>
                         <div class="card p-3 mb-2">
@@ -339,7 +339,7 @@
                         <div class="input-group mt-2">
                             <div class="form-floating">
                                 <input type="text" class="form-control" id="brokerInput" placeholder="Exclude broker">
-                                <label for="locationInput">Exclude broker</label>
+                                <label for="brokerInput">Exclude broker</label>
                             </div>
                             <button class="btn btn-outline-primary" type="button" id="addBrokerBlockButton" onclick="createBrokerBlock()">Add</button>
                         </div>
@@ -358,11 +358,75 @@
                             <h3>Current bot user list</h3>
                             <button type="button" class="btn btn-primary" onclick="getBotUsers()">Refresh</button>
                         </div>
-                        <ul class="list-group" id="block-list">
+                        <ul class="list-group" id="user-list">
                             <li class="list-group-item">User list goes here</li>
                         </ul>
+                        <div class="input-group mt-2">
+                            <span class="input-group-text">Add user</span>
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="userInput" placeholder="Add user">
+                                <label for="userInput">Firstname Lastname</label>
+                            </div>
+                            <button class="btn btn-outline-primary" type="button" id="addUserButton" onclick="createUser()">Add</button>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-evenly mb-2">
+                            <h3>Broker block overrides</h3>
+                            <button type="button" class="btn btn-primary" onclick="getPersistentBrokerBlocks()">Refresh</button>
+                        </div>
+                        <ul class="list-group" id="persistent-block-list">
+                            <li class="list-group-item">No broker block overrides</li>
+                        </ul>
+                        <div class="input-group mt-2">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="brokerOverrideInput" placeholder="Add broker block override">
+                                <label for="brokerOverrideInput">Add broker block override</label>
+                            </div>
+                            <button class="btn btn-outline-primary" type="button" id="addBrokerBlockButton" onclick="createPersistentBrokerBlock()">Add</button>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-evenly mb-2">
+                            <h3>Billing settings</h3>
+                            <button type="button" class="btn btn-primary" onclick="getBillableUsers()">Refresh</button>
+                        </div>
+                        <ul class="list-group" id="billable-user-list">
+                            <li class="list-group-item">No billable users</li>
+                        </ul>
+                        <hr>
+                        <select class="form-select mt-2" id="billableUserList">
+                            <option selected>Choose user</option>
+                            <option value="1">One</option>
+                            <option value="2">Two</option>
+                            <option value="3">Three</option>
+                        </select>
+                        <div class="input-group mt-2">
+                            <span class="input-group-text">Payment date</span>
+                            <input class="form-control" type="datetime-local" id="paymentDate" name="paymentDate" min="2024-01-01T00:00" max="2030-12-31T00:00" />
+                        </div>
+                        <div class="input-group mt-2">
+                            <span class="input-group-text">Payment period</span>
+                            <select class="form-select" id="paymentPeriod">
+                                <option value="1">1 month</option>
+                                <option value="2">2 months</option>
+                                <option value="3">3 months</option>
+                                <option value="6">6 months</option>
+                            </select>
+                        </div>
+                        <br>
+                        <button class="btn btn-primary" type="button" id="addBillableUserButton" onclick="addBillableUser()">Add</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Information</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-text">
+                Hello, world! This is a toast message.
             </div>
         </div>
     </div>

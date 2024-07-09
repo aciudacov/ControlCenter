@@ -13,6 +13,7 @@ var place = null;
 var modalPlace = null;
 let refSearchId = null;
 let refSearchScope = null;
+let billableUsers;
 
 function initMap() {
     const input = document.getElementById("locationInput");
@@ -62,6 +63,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function showPopup(text) {
+    const toastLiveExample = document.getElementById('liveToast');
+    const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLiveExample);
+    document.getElementById('toast-text').innerHTML = text;
+    toastBootstrap.show();
+}
+
 window.onload = (_event) => {
     addEventListenerToShipWithinRange();
     addEventListenerToMilesSearchRange();
@@ -82,6 +90,8 @@ function checkInitData() {
 function loadUserData() {
     getCurrentSearches();
     getBrokerBlocks();
+    getPersistentBrokerBlocks();
+    checkAdminRights();
 }
 
 //tooltip init
@@ -351,6 +361,13 @@ const States = {
     58: "South"
 };
 
+const PaymentFrequency = {
+    1: "1 month",
+    2: "2 months",
+    3: "3 months",
+    6: "6 months"
+}
+
 function renderCurrentSearches(searches){
     let renderString = "";
     searches.forEach(s => {
@@ -358,7 +375,7 @@ function renderCurrentSearches(searches){
         <li class="list-group-item pb-4" id="search${s.orderSearchId}">
             <span class="mb-2 fs-5">Order search ${s.orderSearchId}</span>
             <br>
-            <span class="mb-2 fs-5">Created at - ${new Date(Date.parse(s.createdAt)).toLocaleString()}</span>
+            <span class="mb-2 fs-5">Created at - ${new Date(Date.parse(s.createdAt)).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
             <br>
             <span class="mb-2 fs-5">Notifications sent - ${s.notificationsCount}</span>
             <div id="from${s.orderSearchId}">
@@ -521,6 +538,27 @@ function renderBrokerBlocks(blocks){
     }
 }
 
+function renderPersistentBrokerBlocks(blocks){
+    let renderString = "";
+    blocks.forEach(b => {
+        renderString += `<li id="block${b.blockId}" class="list-group-item d-flex justify-content-between">
+                            <span>${b.value}</span>
+                            <button type="button" class="btn btn-danger" onclick="deletePersistentBrokerBlock(${b.blockId})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </li>`;
+    });
+    let blocksContainer = document.getElementById('persistent-block-list');
+    if (renderString != ""){
+        blocksContainer.innerHTML = renderString;
+    } else {
+        blocksContainer.innerHTML = "<li class=\"list-group-item\">No blocked broker overrides</li>";
+    }
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().slice(0, 16);
+    document.getElementById('paymentDate').value = formattedDate;
+}
+
 function getSearchData(searchId){
     var fromContainer = document.getElementById('from'+searchId);
     var fromLocations = fromContainer.querySelectorAll('input:disabled');
@@ -568,6 +606,110 @@ function getSearchData(searchId){
     }
 }
 
+const userSelect = document.getElementById('billableUserList');
+userSelect.addEventListener('change', (event) => {
+    const selectedBotUserId = parseInt(event.target.value);
+    if (billableUsers){
+        const selectedUser = billableUsers.find(user => user.botUserId === selectedBotUserId);
+        if (selectedUser) {
+            const nextPaymentDueDate = new Date(selectedUser.nextPaymentDue);
+            nextPaymentDueDate.setDate(nextPaymentDueDate.getDate() + 1);
+            const formattedDate = nextPaymentDueDate.toISOString().slice(0, 16);
+            document.getElementById('paymentDate').value = formattedDate;
+        }
+        else {
+            document.getElementById('paymentDate').valueAsDate = new Date();
+        }
+    }
+});
+
+function parseJwt(tkn) {
+    const base64Url = tkn.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
+function checkAdminRights(){
+    let claims = parseJwt(token);
+    if (claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] == 'admin'){
+        let adminPanel = document.getElementById('admin-panel');
+        adminPanel.classList.remove('d-none');
+        getBotUsers();
+        getBillableUsers();
+        getPersistentBrokerBlocks();
+    }
+}
+
+function renderBotUsers(botUsers){
+    let renderString = "";
+    botUsers.forEach(u => {
+        renderString += `<li id="user${u.botUserId}" class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span>${u.firstName} ${u.lastName} ${u.isAdmin ? "(Admin)" : ""}</span>
+                                <button type="button" class="btn btn-danger" ${u.isAdmin ? "disabled" : ""} onclick="removeUser(${u.botUserId})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <span>Last search created at: ${u.lastSearchCreatedAt ? new Date(Date.parse(u.lastSearchCreatedAt)).toLocaleString() : "never"} </span>
+                            <br>
+                            <span>Total searches created: ${u.searchesCreated}</span>
+                            <br>
+                            <span>Current search count: ${u.count}</span>
+                        </li>`;
+    });
+    let usersContainer = document.getElementById('user-list');
+    if (renderString != ""){
+        usersContainer.innerHTML = renderString;
+    } else {
+        usersContainer.innerHTML = "<li class=\"list-group-item\">User list goes here</li>";
+    }
+}
+
+function renderBillableUserSelect(botUsers){
+    let renderString = "";
+    botUsers.filter(b => !b.isAdmin)
+            .forEach(u => {
+                    renderString += `<option value="${u.botUserId}" id=billed${u.botUserId}>${u.firstName} ${u.lastName}</option>`;
+            });
+    if (renderString != ""){
+        userSelect.innerHTML = renderString;
+    } else {
+        billableUuserSelectserSelect.innerHTML = `<option value=\"0\">No users available</option>`;
+    }
+}
+
+function renderBillableUsers(billableUsers){
+    let renderString = "";
+    billableUsers.forEach(u => {
+        renderString += `<li id="user${u.botUserId}" class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span>${u.firstName} ${u.lastName}</span>
+                                <div>
+                                <button type="button" class="btn btn-danger" onclick="removeBillableUser(${u.botUserId})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                </div>
+                            </div>
+                            <span>Last payment date: ${new Date(Date.parse(u.lastPaymentDate)).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} </span>
+                            <br>
+                            <span>Total payments: ${u.paymentCount}</span>
+                            <br>
+                            <span>Payment frequency: ${PaymentFrequency[u.lastPaymentPeriod]}</span>
+                            <br>
+                            <span>Next payment due: ${new Date(Date.parse(u.nextPaymentDue)).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
+                        </li>`;
+    });
+    let usersContainer = document.getElementById('billable-user-list');
+    if (renderString != ""){
+        usersContainer.innerHTML = renderString;
+    } else {
+        usersContainer.innerHTML = "<li class=\"list-group-item\">No billable users</li>";
+    }
+}
+
 //requests
 
 const baseAddress = "https://273b-66-94-118-232.ngrok-free.app/web"
@@ -608,10 +750,13 @@ function createNewSearch(){
     })
     .then(function (response){
         Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        showPopup("Search created");
         getCurrentSearches();
         let accordeonItem2 = document.getElementById('flush-collapseTwo');
         let bsCollapse = new bootstrap.Collapse(accordeonItem2, {
             toggle: true
+        }).catch(function (error){
+            showPopup("There was an error while saving new search")
         });
     });
 }
@@ -643,21 +788,30 @@ function updateSavedSearch(searchId){
         })
         .then(function (response){
             Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            showPopup("Search updated");
             getCurrentSearches();
+        }).catch(function (error){
+            showPopup("There was an error while updating search")
         });
     }
 }
 
 function deleteSavedSearch(searchId){
-    axios.delete(baseAddress + "/search/" + searchId, {
-        headers: {
-            Authorization: `Bearer ${token}`
-         }
-    })
-    .then(function (response){
-        Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        getCurrentSearches();
-    });
+    if (confirm('Are you sure you want to delete this search?')) {
+        axios.delete(baseAddress + "/search/" + searchId, {
+            headers: {
+                Authorization: `Bearer ${token}`
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            showPopup("Search deleted");
+            getCurrentSearches();
+        }).catch(function (error){
+            showPopup("There was an error while deleting search")
+        });
+      } else {
+      }
 }
 
 function getBrokerBlocks(){
@@ -684,7 +838,11 @@ function createBrokerBlock(){
         .then(function (response){
             Telegram.WebApp.HapticFeedback.notificationOccurred('success');
             brokerNameInput.value = "";
+            showPopup("New broker block created");
             getBrokerBlocks();
+        })
+        .catch(function (error){
+            showPopup("There was an error while creating broker block")
         });    
     } else{
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
@@ -693,15 +851,20 @@ function createBrokerBlock(){
 }
 
 function deleteBrokerBlock(blockId){
-    axios.delete(baseAddress + "/blocked-broker/" + blockId, {
-        headers: {
-            Authorization: `Bearer ${token}`
-         }
-    })
-    .then(function (response){
-        Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        getBrokerBlocks();
-    });
+    if (confirm('Are you sure you want to delete this broker block?')) {
+        axios.delete(baseAddress + "/blocked-broker/" + blockId, {
+            headers: {
+                Authorization: `Bearer ${token}`
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            getBrokerBlocks();
+        }).catch(function (error){
+            showPopup("There was an error while deleting broker block")
+        });
+      } else {
+      }
 }
 
 function getPersistentBrokerBlocks(){
@@ -712,12 +875,46 @@ function getPersistentBrokerBlocks(){
          }
         })
         .then(function (response){
-            //renderBrokerBlocks(response.data);
+            renderPersistentBrokerBlocks(response.data);
         });
 }
 
 function createPersistentBrokerBlock(){
+    var brokerNameInput = document.getElementById('brokerOverrideInput');
+    if (brokerNameInput.value != ''){
+        axios.post(baseAddress + "/blocked-broker-persistent/", brokerNameInput.value, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            brokerNameInput.value = "";
+            showPopup("Persistent broker block created");
+            getPersistentBrokerBlocks();
+        });    
+    } else{
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        alert("Broker name cannot be empty!");
+    }
+}
 
+function deletePersistentBrokerBlock(blockId){
+    if (confirm('Are you sure you want to delete persistent broker block?')) {
+        axios.delete(baseAddress + "/blocked-broker-persistent/" + blockId, {
+            headers: {
+                Authorization: `Bearer ${token}`
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            showPopup("Persistent broker block deleted");
+            getPersistentBrokerBlocks();
+        });
+      } else {
+      }
+    
 }
 
 function getBotUsers(){
@@ -728,6 +925,102 @@ function getBotUsers(){
          }
         })
         .then(function (response){
-            //render user list
+            renderBotUsers(response.data);
+            renderBillableUserSelect(response.data);
         });
+}
+
+function removeUser(userId){
+    if (confirm('Are you sure you want to remove this user?')) {
+        axios.delete(baseAddress + "/users/" + userId, {
+            headers: {
+                Authorization: `Bearer ${token}`
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            showPopup("Bot user deleted");
+            getBotUsers();
+        });
+      } else {
+      }
+    
+}
+
+function createUser(){
+    var userNameInput = document.getElementById('userInput');
+    if (userNameInput.value != ''){
+        axios.post(baseAddress + "/users", userNameInput.value, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            userNameInput.value = "";
+            showPopup("New user created, token has been sent to you");
+            getBotUsers();
+        }); 
+    } else {
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        alert("New user name/surname cannot be empty!");
+    }
+}
+
+function getBillableUsers(){
+    axios.get(baseAddress + "/billable-users", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            billableUsers = response.data;
+            renderBillableUsers(billableUsers);
+            userSelect.dispatchEvent(new Event('change'));
+        });
+}
+
+function addBillableUser(){
+    let payload = {
+        botUserId: userSelect.value,
+        lastPaymentMade: document.getElementById('paymentDate').value,
+        paymentTerm: document.getElementById('paymentPeriod').value
+    };
+    if (payload.botUserId != 0){
+    axios.post(baseAddress + "/billable-users", payload, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+         }
+    })
+    .then(function (response){
+        Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        showPopup("Payment added for selected user");
+        getBillableUsers();
+    })
+    .catch(function (error){
+        alert(error.response.data)
+    });   
+    } else {
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        alert("Please select an user from the list");
+    }
+}
+
+function removeBillableUser(userId){
+    if (confirm('Are you sure you want to remove last payment from this user?')) {
+        axios.delete(baseAddress + "/billable-users/" + userId, {
+            headers: {
+                Authorization: `Bearer ${token}`
+             }
+        })
+        .then(function (response){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            showPopup("Payment removed from selected user");
+            getBillableUsers();
+        });
+      } else {
+      }
 }
