@@ -731,7 +731,7 @@ function getAuthToken(){
 function createNewSearch(){
     let minVehicles = document.getElementById('minVehicles').value;
     let maxVehicles = document.getElementById('maxVehicles').value;
-    if (minVehicles > maxVehicles)
+    if (parseInt(minVehicles) > parseInt(maxVehicles))
     {
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
         alert("Min vehicles amount cannot be greater than max vehicles amount!");
