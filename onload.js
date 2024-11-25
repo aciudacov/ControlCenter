@@ -637,10 +637,107 @@ function checkAdminRights(){
     if (claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] == 'admin'){
         let adminPanel = document.getElementById('admin-panel');
         adminPanel.classList.remove('d-none');
+        let botStatus = document.getElementById('bot-status');
+        botStatus.classList.remove('d-none');
+        let botConfig = document.getElementById('bot-config');
+        botConfig.classList.remove('d-none');
         getBotUsers();
         getBillableUsers();
         getPersistentBrokerBlocks();
+        getBotStatus();
+        getBotConfig();
     }
+}
+
+function renderBotStatus(botStatus){
+    let renderString = "";
+    renderString += `<li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>Central Dispatch</span>
+                        </div>
+                        <span>Browser open: ${botStatus.centralDispatch.browserOpen ? '<span class="badge rounded-pill text-bg-success">Yes</span>' : '<span class="badge rounded-pill text-bg-danger">No</span>'}</span>
+                        <br>
+                        <span>Obtaining token: ${botStatus.centralDispatch.obtainingToken ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                        <br>
+                        <span>Password incorrect: ${botStatus.centralDispatch.incorrectPassword ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                        <br>
+                        <span>2FA required: ${botStatus.centralDispatch.twoFactorNeeded ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>Super Dispatch</span>
+                        </div>
+                        <span>Browser open: ${botStatus.superDispatch.browserOpen ? '<span class="badge rounded-pill text-bg-success">Yes</span>' : '<span class="badge rounded-pill text-bg-danger">No</span>'}</span>
+                        <br>
+                        <span>Obtaining token: ${botStatus.superDispatch.obtainingToken ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                        <br>
+                        <span>Password incorrect: ${botStatus.superDispatch.incorrectPassword ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                        <br>
+                        <span>2FA required: ${botStatus.superDispatch.twoFactorNeeded ? '<span class="badge rounded-pill text-bg-danger">Yes</span>' : '<span class="badge rounded-pill text-bg-success">No</span>'}</span>
+                    </li>`;
+    let statusContainer = document.getElementById('status-details');
+    statusContainer.innerHTML = renderString;
+}
+
+function renderBotConfig(config){
+    let renderString = "";
+    renderString += `<div class="d-flex justify-content-evenly mb-2">
+                        <h3>Current configuration</h3>
+                        <button type="button" class="btn btn-primary" onclick="getBotConfig()">Refresh</button>
+                    </div>
+                    <div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" checked>
+                            <label class="form-check-label" for="flexSwitchCheckDefault">Polling enabled</label>
+                        </div>
+                        <h5>Central Dispatch</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="centralDispatchEnabled" ${config.centralDispatchEnabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="centralDispatchEnabled">Enabled</label>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">Username</span>
+                            <input type="text" class="form-control" value="${config.centralDispatchUsername}">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">Password</span>
+                            <input type="text" class="form-control" value="${config.centralDispatchPassword}">
+                        </div>
+                        <button type="button" class="btn btn-primary mt-1">Update</button>
+                        <div id="central-browser" class="${config.centralDispatchEnabled ? "" : "d-none"} mt-2">
+                            <div>
+                                <h5>Central Dispatch browser controls</h5>
+                                <button type="button" class="btn btn-primary" onclick="getCentralScreenshot()">Refresh</button>
+                                <button type="button" class="btn btn-primary" onclick="restartCentralBrowser()">Restart browser</button>
+                                <button type="button" class="btn btn-primary" onclick="selectMfaCentral()">2FA method</button>
+                                <button type="button" class="btn btn-primary" onclick="enterCodeCentral()">Enter 2FA code</button>
+                            </div>
+                            <img id="central-screenshot" class="img-fluid" src="" alt="Central Dispatch screenshot">
+                        </div>
+                        <hr/>
+                        <h5>Super Dispatch</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="superDispatchEnabled" ${config.centralDispatchEnabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="superDispatchEnabled">Enabled</label>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">Username</span>
+                            <input type="text" class="form-control" value="${config.superDispatchUsername}">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">Password</span>
+                            <input type="text" class="form-control" value="${config.superDispatchPassword}">
+                        </div>
+                        <button type="button" class="btn btn-primary mt-1">Update</button>
+                        <hr/>
+                        <div class="input-group">
+                            <span class="input-group-text">Max searches</span>
+                            <input type="number" inputmode="numeric" step="1" min="1" max="15" class="form-control text-center" value="${config.maxSearches}" id="maxSearches">
+                        </div>
+                        <button type="button" class="btn btn-primary mt-1">Update</button>
+                    </div>`;
+    let configContainer = document.getElementById('config-details');
+    configContainer.innerHTML = renderString;
 }
 
 function renderBotUsers(botUsers){
@@ -710,9 +807,14 @@ function renderBillableUsers(billableUsers){
     }
 }
 
+function renderCentralScreenshot(encodedImage){
+    let img = document.getElementById('central-screenshot');
+    img.src = 'data:image/png;base64,' + encodedImage;
+}
+
 //requests
 
-const baseAddress = "https://273b-66-94-118-232.ngrok-free.app/web"
+const baseAddress = "https://f891-66-94-118-232.ngrok-free.app/web"
 let token = '';
 
 function getAuthToken(){
@@ -752,8 +854,8 @@ function createNewSearch(){
         Telegram.WebApp.HapticFeedback.notificationOccurred('success');
         showPopup("Search created");
         getCurrentSearches();
-        let accordeonItem2 = document.getElementById('flush-collapseTwo');
-        let bsCollapse = new bootstrap.Collapse(accordeonItem2, {
+        let accordionItem2 = document.getElementById('flush-collapseTwo');
+        let bsCollapse = new bootstrap.Collapse(accordionItem2, {
             toggle: true
         }).catch(function (error){
             showPopup("There was an error while saving new search")
@@ -930,6 +1032,30 @@ function getBotUsers(){
         });
 }
 
+function getBotStatus(){
+    axios.get(baseAddress + "/status", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            renderBotStatus(response.data);
+        });
+}
+
+function getBotConfig(){
+    axios.get(baseAddress + "/config", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            renderBotConfig(response.data);
+        });
+}
+
 function removeUser(userId){
     if (confirm('Are you sure you want to remove this user?')) {
         axios.delete(baseAddress + "/users/" + userId, {
@@ -1024,3 +1150,25 @@ function removeBillableUser(userId){
       } else {
       }
 }
+
+function getCentralScreenshot(){
+    axios.get(baseAddress + "/cenltral-screen", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'ngrok-skip-browser-warning': '69420'
+         }
+        })
+        .then(function (response){
+            encodedScreenshot = response.data;
+            renderCentralScreenshot(billableUsers);
+        })
+        .catch(function (error){
+            showPopup("Browser is unavaible at this time");
+        });
+}
+
+function restartCentralBrowser(){}
+
+function selectMfaCentral(){}
+
+function enterCodeCentral(){}
