@@ -1,3 +1,5 @@
+const debug = false;
+
 const options = {
     fields: ["place_id", "formatted_address", "name", "address_components", "geometry"],
     strictBounds: false,
@@ -79,11 +81,16 @@ window.onload = (_event) => {
 };
 
 function checkInitData() {
-    if (Telegram.WebApp.initData) {
+    if (debug) {
         getAuthToken();
-    } else {
-        alert("Please open this page via Telegram bot");
-        return;
+    }
+    else {
+        if (Telegram.WebApp.initData) {
+            getAuthToken();
+        } else {
+            alert("Please open this page via Telegram bot");
+            return;
+        }
     }
 }
 
@@ -380,7 +387,7 @@ function renderCurrentSearches(searches){
             <span class="mb-2 fs-5">Notifications sent - ${s.notificationsCount}</span>
             <div id="from${s.orderSearchId}">
                 <span class="input-group-text mt-2 mb-1">From</span>
-                ${s.geoCities.filter(c => c.scope == 0).map((g) => '<div class="input-group mb-1" id="' + s.orderSearchId + 'from' + g.geoCityId + '"><input type="text" class="form-control" data-name="'+ g.cityName +'" data-state="' + States[g.cityState] + '" data-type="city" data-scope="Pickup" data-id="keep" aria-label="Pickup location" value="'+ g.cityName + ', '+ States[g.cityState] + ', ' + g.radius +'mi" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
+                ${s.geoCities.filter(c => c.scope == 0).map((g) => '<div class="input-group mb-1" id="' + s.orderSearchId + 'from' + g.geoCityId + '"><input type="text" class="form-control" data-name="'+ g.cityName +'" data-state="' + States[g.cityState] + '" data-range="' + g.radius + '" data-type="city" data-scope="Pickup" data-id="' + g.placeId + '" aria-label="Pickup location" value="'+ g.cityName + ', '+ States[g.cityState] + ', ' + g.radius +'mi" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
                 ${s.geoZones.filter(c => c.scope == 0).map((g) => '<div class="input-group mb-1" id="' + s.orderSearchId + 'from' + g.geoZoneId + '"><input type="text" class="form-control" data-name="'+ States[g.state] +'" data-state="' + States[g.state] + '" aria-label="Pickup location" value="'+ States[g.state] +'" data-type="region" data-scope="Pickup" data-id="keep" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
             </div>
             <button type="button" class="btn btn-primary mt-1" onclick="showModal(${s.orderSearchId}, 'pu')">
@@ -389,7 +396,7 @@ function renderCurrentSearches(searches){
             <hr>
             <div id="to${s.orderSearchId}">
                 <span class="input-group-text mb-1">To</span>
-                ${s.geoCities.filter(c => c.scope == 1).map((g) => '<div class="input-group mb-1" id="'+ s.orderSearchId + 'to' + g.geoCityId + '"><input type="text" class="form-control" aria-label="Delivery location" value="'+ g.cityName + ', '+ States[g.cityState] +', ' + g.radius + 'mi" data-name="'+ g.cityName +'" data-state="' + States[g.cityState] + '" data-type="city" data-scope="Delivery" data-id="keep" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
+                ${s.geoCities.filter(c => c.scope == 1).map((g) => '<div class="input-group mb-1" id="'+ s.orderSearchId + 'to' + g.geoCityId + '"><input type="text" class="form-control" aria-label="Delivery location" value="'+ g.cityName + ', '+ States[g.cityState] +', ' + g.radius + 'mi" data-range="' + g.radius + '" data-name="'+ g.cityName +'" data-state="' + States[g.cityState] + '" data-type="city" data-scope="Delivery" data-id="' + g.placeId + '" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
                 ${s.geoZones.filter(c => c.scope == 1).map((g) => '<div class="input-group mb-1" id="' + s.orderSearchId + 'to' + g.geoZoneId + '"><input type="text" class="form-control" aria-label="Delivery location" value="'+ States[g.state] +'" data-name="'+ States[g.state] +'" data-state="' + States[g.state] + '" data-type="region" data-scope="Delivery" data-id="keep" disabled></input><button class="btn btn-outline-danger" type="button" onclick="removeLocation(this)"><i class="bi bi-trash"></i></button></div>')}
             </div>
             <button type="button" class="btn btn-primary mt-1" onclick="showModal(${s.orderSearchId}, 'del')">
