@@ -821,7 +821,12 @@ function renderCentralScreenshot(encodedImage){
 
 //requests
 
-const baseAddress = "https://f891-66-94-118-232.ngrok-free.app/web"
+let baseAddress;
+if (debug) {
+    baseAddress = "https://localhost:5254/web";
+} else {
+    baseAddress = "https://52c6-66-94-118-232.ngrok-free.app/web";
+}
 let token = '';
 
 function getAuthToken(){
