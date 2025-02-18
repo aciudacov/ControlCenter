@@ -825,7 +825,7 @@ let baseAddress;
 if (debug) {
     baseAddress = "https://localhost:5254/web";
 } else {
-    baseAddress = "https://6603-66-94-118-232.ngrok-free.app/web";
+    baseAddress = "https://400f-66-94-118-232.ngrok-free.app/web";
 }
 let token = '';
 
