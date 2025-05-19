@@ -11,6 +11,8 @@ const options = {
 const modalElement = document.getElementById('locationModal');
 const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
 
+const sessionTokenModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sessionTokenModal'));
+
 var place = null;
 var modalPlace = null;
 let refSearchId = null;
@@ -55,6 +57,14 @@ function showModal(searchId, scope) {
     modal.show();
 }
 
+function showSessionTokenModal() {
+    sessionTokenModal.show();
+}
+
+function hideSessionTokenModal() {
+    sessionTokenModal.hide();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         let html = document.getElementsByTagName('html');
@@ -88,7 +98,8 @@ function checkInitData() {
         if (Telegram.WebApp.initData) {
             getAuthToken();
         } else {
-            alert("Please open this page via Telegram bot");
+            hideSpinner(false);
+            showErrorMessage("Please open this page via Telegram app");
             return;
         }
     }
@@ -829,17 +840,54 @@ if (debug) {
 }
 let token = '';
 
+function refreshToken(){
+    axios.post(baseAddress + "/validate", {
+        InitData: Telegram.WebApp.initData
+    })
+    .then(function (response){
+        token = response.data;
+        hideSessionTokenModal();
+    })
+    .catch(function (error){
+        alert("There was an error, please reload the page");
+    });
+}
+
 function getAuthToken(){
     axios.post(baseAddress + "/validate", {
         InitData: Telegram.WebApp.initData
     })
     .then(function (response){
         token = response.data;
+        hideSpinner(true);
         loadUserData();
     })
-    .catch(function (errror){
-        alert("There was an error during auth, please contact admin");
+    .catch(function (error){
+        hideSpinner(false);
+        if (error.code == "ERR_NETWORK" || error.response.status == 502){
+            showErrorMessage("Bot is currently unavailable, please try again later");
+            return;
+        }
+        if (error.response.status == 401){
+            showErrorMessage("You are not authorized to use this bot");
+            return;
+        }
+        showErrorMessage("There was an error during auth, please contact admin");
+        
     });
+}
+
+function hideSpinner(showControls){
+    document.getElementById('spinnerContainer').classList.add('d-none');
+    if (showControls){
+        document.getElementById('mainAccordion').classList.remove('d-none');
+    }
+}
+
+function showErrorMessage(error){
+    let errorMessage = document.getElementById('errorText');
+    errorMessage.innerHTML = error;
+    document.getElementById('errorContainer').classList.remove('d-none');
 }
 
 function createNewSearch(){
@@ -869,8 +917,13 @@ function createNewSearch(){
         let accordionItem2 = document.getElementById('flush-collapseTwo');
         let bsCollapse = new bootstrap.Collapse(accordionItem2, {
             toggle: true
-        }).catch(function (error){
-            showPopup("There was an error while saving new search")
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while saving new search");
         });
     });
 }
@@ -884,6 +937,13 @@ function getCurrentSearches(){
     })
     .then(function (response){
         renderCurrentSearches(response.data);
+    })
+    .catch(function (error){
+        if (error.response.status == 401){
+            showSessionTokenModal();
+            return;
+        }
+        showPopup("There was an error while loading searches");
     });
 }
 
@@ -904,8 +964,13 @@ function updateSavedSearch(searchId){
             Telegram.WebApp.HapticFeedback.notificationOccurred('success');
             showPopup("Search updated");
             getCurrentSearches();
-        }).catch(function (error){
-            showPopup("There was an error while updating search")
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while updating search");
         });
     }
 }
@@ -921,8 +986,13 @@ function deleteSavedSearch(searchId){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
             showPopup("Search deleted");
             getCurrentSearches();
-        }).catch(function (error){
-            showPopup("There was an error while deleting search")
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while deleting search");
         });
       } else {
       }
@@ -937,6 +1007,13 @@ function getBrokerBlocks(){
         })
         .then(function (response){
             renderBrokerBlocks(response.data);
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while loading broker blocks");
         });
 }
 
@@ -956,7 +1033,11 @@ function createBrokerBlock(){
             getBrokerBlocks();
         })
         .catch(function (error){
-            showPopup("There was an error while creating broker block")
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while creating broker block");
         });    
     } else{
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
@@ -974,8 +1055,13 @@ function deleteBrokerBlock(blockId){
         .then(function (response){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
             getBrokerBlocks();
-        }).catch(function (error){
-            showPopup("There was an error while deleting broker block")
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while deleting broker block");
         });
       } else {
       }
@@ -990,6 +1076,13 @@ function getPersistentBrokerBlocks(){
         })
         .then(function (response){
             renderPersistentBrokerBlocks(response.data);
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while loading persistent broker blocks");
         });
 }
 
@@ -1007,7 +1100,14 @@ function createPersistentBrokerBlock(){
             brokerNameInput.value = "";
             showPopup("Persistent broker block created");
             getPersistentBrokerBlocks();
-        });    
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while creating persistent broker block");
+        });
     } else{
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
         alert("Broker name cannot be empty!");
@@ -1025,6 +1125,13 @@ function deletePersistentBrokerBlock(blockId){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
             showPopup("Persistent broker block deleted");
             getPersistentBrokerBlocks();
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while deleting persistent broker block");
         });
       } else {
       }
@@ -1041,6 +1148,13 @@ function getBotUsers(){
         .then(function (response){
             renderBotUsers(response.data);
             renderBillableUserSelect(response.data);
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while retrieving bot users");
         });
 }
 
@@ -1053,6 +1167,13 @@ function getBotStatus(){
         })
         .then(function (response){
             renderBotStatus(response.data);
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while retrieving bot status");
         });
 }
 
@@ -1065,6 +1186,13 @@ function getBotConfig(){
         })
         .then(function (response){
             renderBotConfig(response.data);
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while retrieving bot config");
         });
 }
 
@@ -1079,6 +1207,13 @@ function removeUser(userId){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
             showPopup("Bot user deleted");
             getBotUsers();
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while deleting bot user");
         });
       } else {
       }
@@ -1099,6 +1234,13 @@ function createUser(){
             userNameInput.value = "";
             showPopup("New user created, token has been sent to you");
             getBotUsers();
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while creating new user");
         }); 
     } else {
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
@@ -1116,7 +1258,13 @@ function getBillableUsers(){
         .then(function (response){
             billableUsers = response.data;
             renderBillableUsers(billableUsers);
-            userSelect.dispatchEvent(new Event('change'));
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while retrieving billable users");
         });
 }
 
@@ -1139,8 +1287,12 @@ function addBillableUser(){
         getBillableUsers();
     })
     .catch(function (error){
-        alert(error.response.data)
-    });   
+        if (error.response.status == 401){
+            showSessionTokenModal();
+            return;
+        }
+        showPopup("There was an error while adding paid user");
+    })  
     } else {
         Telegram.WebApp.HapticFeedback.notificationOccurred('error');
         alert("Please select an user from the list");
@@ -1158,29 +1310,14 @@ function removeBillableUser(userId){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
             showPopup("Payment removed from selected user");
             getBillableUsers();
+        })
+        .catch(function (error){
+            if (error.response.status == 401){
+                showSessionTokenModal();
+                return;
+            }
+            showPopup("There was an error while removing paid user");
         });
       } else {
       }
 }
-
-function getCentralScreenshot(){
-    axios.get(baseAddress + "/cenltral-screen", {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'ngrok-skip-browser-warning': '69420'
-         }
-        })
-        .then(function (response){
-            encodedScreenshot = response.data;
-            renderCentralScreenshot(billableUsers);
-        })
-        .catch(function (error){
-            showPopup("Browser is unavaible at this time");
-        });
-}
-
-function restartCentralBrowser(){}
-
-function selectMfaCentral(){}
-
-function enterCodeCentral(){}
