@@ -606,8 +606,8 @@ function getSearchData(searchId){
     let vehicleTypes = Array.from(document.querySelectorAll('#vehicleTypes' + searchId + ' input:checked')).map(c => c.value);
     let trailerType = document.getElementById('trailertype' + searchId).value;
     let vehicleStatus = document.getElementById('vehiclecondition' + searchId).value;
-    let minVehicles = document.getElementById('minvehicles' + searchId).value;
-    let maxVehicles = document.getElementById('maxvehicles' + searchId).value;
+    let minVehicles = parseInt(document.getElementById('minvehicles' + searchId).value);
+    let maxVehicles = parseInt(document.getElementById('maxvehicles' + searchId).value);
     let readyToShip = document.getElementById('shipwithin' + searchId).value;
     let minTotal = document.getElementById('total' + searchId).value;
     let minPpm = document.getElementById('permile' + searchId).value.replace(",", ".");
